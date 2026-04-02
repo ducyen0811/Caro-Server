@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum QueueType {
+  RANKED
+  CASUAL
+}
+
+enum QueueStatus {
+  SEARCHING
+  MATCHED
+  CANCELLED
+}
+
+enum MatchStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CANCELLED
+}
+
+enum PlayerRole {
+  X
+  O
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+enum EndedType {
+  WIN
+  DRAW
+  SURRENDER
+  TIMEOUT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stats         UserStats?
+  refreshTokens RefreshToken[]
+  matchPlayers  MatchPlayer[]
+  queueEntry    MatchmakingQueue?
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserStats {
+  userId      String    @id
+  eloRating   Int       @default(1000)
+  gamesPlayed Int       @default(0)
+  wins        Int       @default(0)
+  losses      Int       @default(0)
+  draws       Int       @default(0)
+  lastMatchAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eloRating])
+}
+
+model MatchmakingQueue {
+  id             String      @id @default(cuid())
+  userId         String      @unique
+  queueType      QueueType   @default(RANKED)
+  boardSize      Int         @default(15)
+  ratingSnapshot Int
+  status         QueueStatus @default(SEARCHING)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, queueType, boardSize, ratingSnapshot])
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  roomId      String      @unique @default(cuid())
+  status      MatchStatus @default(WAITING)
+  boardSize   Int         @default(15)
+  winLength   Int         @default(5)
+  currentTurn PlayerRole  @default(X)
+  winnerId    String?
+  isRated     Boolean     @default(true)
+  endedType   EndedType?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  players MatchPlayer[]
+  moves   Move[]
+
+  @@index([status, createdAt])
+}
+
+model MatchPlayer {
+  id           String       @id @default(cuid())
+  matchId      String
+  userId       String
+  role         PlayerRole
+  result       MatchResult?
+  ratingBefore Int?
+  ratingAfter  Int?
+  ratingDelta  Int?
+  joinedAt     DateTime     @default(now())
+
+  match Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moves Move[]
+
+  @@unique([matchId, userId])
+  @@unique([matchId, role])
+  @@index([userId])
+}
+
+model Move {
+  id         String   @id @default(cuid())
+  matchId    String
+  playerId   String
+  moveNumber Int
+  x          Int
+  y          Int
+  createdAt  DateTime @default(now())
+
+  match  Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player MatchPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, moveNumber])
+  @@unique([matchId, x, y])
+  @@index([matchId, createdAt])
+}

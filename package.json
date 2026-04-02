@@ -1,0 +1,16 @@
+{
+  "name": "caro-server",
+  "version": "1.0.0",
+  "description": "Backend for Caro Galaxy",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio"
+  }
+}
