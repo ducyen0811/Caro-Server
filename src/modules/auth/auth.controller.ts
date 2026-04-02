@@ -31,9 +31,9 @@ export async function register(req: Request, res: Response) {
     }
 
     if (password.length < 6) {
-      return res.status(400).json({
-        message: "Mật khẩu phải có ít nhất 6 ký tự",
-      });
+      return res
+        .status(400)
+        .json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
     }
 
     const existingUser = await prisma.user.findFirst({
@@ -43,9 +43,7 @@ export async function register(req: Request, res: Response) {
     });
 
     if (existingUser) {
-      return res.status(409).json({
-        message: "Username hoặc email đã tồn tại",
-      });
+      return res.status(409).json({ message: "Username hoặc email đã tồn tại" });
     }
 
     const passwordHash = await hashPassword(password);
@@ -87,9 +85,7 @@ export async function register(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("register error:", error);
-    return res.status(500).json({
-      message: "Lỗi server khi đăng ký",
-    });
+    return res.status(500).json({ message: "Lỗi server khi đăng ký" });
   }
 }
 
@@ -99,30 +95,22 @@ export async function login(req: Request, res: Response) {
     const password = String(req.body.password ?? "");
 
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Vui lòng nhập email và mật khẩu",
-      });
+      return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
     }
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: {
-        stats: true,
-      },
+      include: { stats: true },
     });
 
     if (!user) {
-      return res.status(401).json({
-        message: "Email hoặc mật khẩu không đúng",
-      });
+      return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
     }
 
     const isMatch = await comparePassword(password, user.passwordHash);
 
     if (!isMatch) {
-      return res.status(401).json({
-        message: "Email hoặc mật khẩu không đúng",
-      });
+      return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
     }
 
     const accessToken = signAccessToken({
@@ -138,46 +126,32 @@ export async function login(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("login error:", error);
-    return res.status(500).json({
-      message: "Lỗi server khi đăng nhập",
-    });
+    return res.status(500).json({ message: "Lỗi server khi đăng nhập" });
   }
 }
 
 export async function me(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      include: {
-        stats: true,
-      },
+      include: { stats: true },
     });
 
     if (!user) {
-      return res.status(404).json({
-        message: "Không tìm thấy người dùng",
-      });
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    return res.json({
-      user: formatUser(user),
-    });
+    return res.json({ user: formatUser(user) });
   } catch (error) {
     console.error("me error:", error);
-    return res.status(500).json({
-      message: "Lỗi server",
-    });
+    return res.status(500).json({ message: "Lỗi server" });
   }
 }
 
 export async function logout(_req: Request, res: Response) {
-  return res.json({
-    message: "Đăng xuất thành công",
-  });
+  return res.json({ message: "Đăng xuất thành công" });
 }

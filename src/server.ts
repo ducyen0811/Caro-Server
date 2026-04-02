@@ -1,29 +1,18 @@
-import { createServer } from "http";
-import { Server } from "socket.io";
+import http from "http";
 import app from "./app.js";
-import { env } from "./config/env.js";
+import { Server } from "socket.io";
+import initSocket from "./socket/index.js";
 
-const httpServer = createServer(app);
+const server = http.createServer(app);
 
-const io = new Server(httpServer, {
+const io = new Server(server, {
   cors: {
-    origin: env.CLIENT_URL,
-    credentials: true,
+    origin: "*",
   },
 });
 
-io.on("connection", (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
+initSocket(io);
 
-  socket.emit("server:hello", {
-    message: "Connected to Caro Socket.IO server",
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`Socket disconnected: ${socket.id}`);
-  });
-});
-
-httpServer.listen(env.PORT, () => {
-  console.log(`HTTP + Socket server running at http://localhost:${env.PORT}`);
+server.listen(4000, () => {
+  console.log("Server running at 4000");
 });
